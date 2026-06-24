@@ -64,7 +64,7 @@ export default function FileItem({ file }: FileItemProps) {
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p className="truncate font-medium text-gray-800" title={file.name}>
+          <p className="break-all font-medium text-gray-800 leading-relaxed" title={file.name}>
             {file.name}
           </p>
           {isLocal && (
