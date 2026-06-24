@@ -1,8 +1,10 @@
 import { create } from 'zustand'
-import type { FileItem } from '../../shared/types'
+import type { FileItem, DirectoryItem } from '../../shared/types'
 
 interface FileState {
   files: FileItem[]
+  directories: DirectoryItem[]
+  currentDirectory: string
   stats: { totalFiles: number; totalSize: number }
   uploading: boolean
   uploadProgress: number
@@ -12,10 +14,14 @@ interface FileState {
   uploadFile: (file: File, expireHours?: number) => Promise<void>
   deleteFile: (id: string) => Promise<void>
   setPreviewFile: (file: FileItem | null) => void
+  setDirectory: (dirPath: string) => Promise<void>
+  goToParentDirectory: () => Promise<void>
 }
 
 export const useFileStore = create<FileState>((set, get) => ({
   files: [],
+  directories: [],
+  currentDirectory: '',
   stats: { totalFiles: 0, totalSize: 0 },
   uploading: false,
   uploadProgress: 0,
@@ -27,7 +33,12 @@ export const useFileStore = create<FileState>((set, get) => ({
       const res = await fetch('/api/files')
       const data = await res.json()
       if (data.success) {
-        set({ files: data.files, stats: data.stats })
+        set({ 
+          files: data.files, 
+          directories: data.directories || [],
+          currentDirectory: data.currentDirectory || '',
+          stats: data.stats 
+        })
       }
     } catch (error) {
       console.error('Failed to fetch files:', error)
@@ -94,5 +105,37 @@ export const useFileStore = create<FileState>((set, get) => ({
 
   setPreviewFile: (file: FileItem | null) => {
     set({ previewFile: file })
+  },
+
+  setDirectory: async (dirPath: string) => {
+    try {
+      const res = await fetch('/api/directory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: dirPath })
+      })
+      const data = await res.json()
+      if (data.success) {
+        set({
+          files: data.files,
+          directories: data.directories,
+          currentDirectory: data.currentDirectory,
+          stats: {
+            totalFiles: data.files.length,
+            totalSize: data.files.reduce((sum: number, f: FileItem) => sum + f.size, 0)
+          }
+        })
+      }
+    } catch (error) {
+      console.error('Failed to set directory:', error)
+    }
+  },
+
+  goToParentDirectory: async () => {
+    const currentDir = get().currentDirectory
+    if (!currentDir || currentDir === '/') return
+    
+    const parentDir = currentDir.substring(0, currentDir.lastIndexOf('/')) || '/'
+    await get().setDirectory(parentDir)
   }
 }))

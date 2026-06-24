@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import type { FileItem as FileItemType } from '../../shared/types'
 import { formatFileSize, formatTime, getTimeRemaining, getFileIcon, isImage } from '@/utils/format'
 import { useFileStore } from '@/store/fileStore'
+import { clsx } from 'clsx'
 
 interface FileItemProps {
   file: FileItemType
@@ -13,6 +14,7 @@ export default function FileItem({ file }: FileItemProps) {
   const { deleteFile, setPreviewFile } = useFileStore()
   const [copied, setCopied] = useState(false)
   const [showQr, setShowQr] = useState(false)
+  const isLocal = file.id.startsWith('local_')
 
   const handleDownload = () => {
     window.open(`/api/download/${file.id}`, '_blank')
@@ -38,9 +40,15 @@ export default function FileItem({ file }: FileItemProps) {
   }
 
   return (
-    <div className="group relative flex items-center gap-4 rounded-xl bg-white p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 border border-gray-100">
+    <div className={clsx(
+      "group relative flex items-center gap-4 rounded-xl bg-white p-4 shadow-sm transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 border",
+      isLocal ? "border-gray-100" : "border-indigo-100/50"
+    )}>
       <div 
-        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-50 to-purple-50 text-3xl cursor-pointer hover:scale-105 transition-transform"
+        className={clsx(
+          "flex h-14 w-14 shrink-0 items-center justify-center rounded-xl text-3xl cursor-pointer hover:scale-105 transition-transform",
+          isLocal ? "bg-gradient-to-br from-gray-50 to-slate-100" : "bg-gradient-to-br from-indigo-50 to-purple-50"
+        )}
         onClick={handlePreview}
       >
         {isImage(file.type) ? (
@@ -55,15 +63,26 @@ export default function FileItem({ file }: FileItemProps) {
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-gray-800" title={file.name}>
-          {file.name}
-        </p>
+        <div className="flex items-center gap-2">
+          <p className="truncate font-medium text-gray-800" title={file.name}>
+            {file.name}
+          </p>
+          {isLocal && (
+            <span className="shrink-0 px-1.5 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-500 rounded">
+              本地
+            </span>
+          )}
+        </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
           <span>{formatFileSize(file.size)}</span>
           <span className="h-1 w-1 rounded-full bg-gray-300" />
           <span>{formatTime(file.uploadTime)}</span>
           <span className="h-1 w-1 rounded-full bg-gray-300" />
-          <span className="text-amber-600">{getTimeRemaining(file.expireTime)}</span>
+          <span className={clsx(
+            isLocal ? "text-gray-500" : "text-amber-600"
+          )}>
+            {getTimeRemaining(file.expireTime)}
+          </span>
         </div>
       </div>
 

@@ -23,7 +23,8 @@ export function formatTime(isoString: string): string {
   return date.toLocaleDateString('zh-CN')
 }
 
-export function getTimeRemaining(expireTime: string): string {
+export function getTimeRemaining(expireTime: string | null): string {
+  if (!expireTime) return '永久'
   const expire = new Date(expireTime)
   const now = new Date()
   const diff = expire.getTime() - now.getTime()
