@@ -10,6 +10,14 @@ import {
 
 const router = Router()
 
+function sanitizeFilename(filename: string): string {
+  try {
+    return decodeURIComponent(filename)
+  } catch {
+    return filename
+  }
+}
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -28,9 +36,10 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
     }
 
     const expireHours = req.body.expireHours ? parseInt(req.body.expireHours) : undefined
+    const filename = sanitizeFilename(req.file.originalname)
     
     const fileItem = await saveFile(
-      req.file.originalname,
+      filename,
       req.file.buffer,
       req.file.mimetype,
       expireHours
@@ -86,7 +95,11 @@ router.get('/download/:id', async (req: Request, res: Response) => {
     }
 
     const filePath = await getFilePath(fileItem)
-    res.download(filePath, fileItem.name)
+    const filename = fileItem.name
+    const filenameEncoded = encodeURIComponent(filename)
+    
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"; filename*=UTF-8''${filenameEncoded}`)
+    res.download(filePath, filename)
   } catch (error) {
     console.error('Download error:', error)
     res.status(500).json({
