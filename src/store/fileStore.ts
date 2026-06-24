@@ -38,6 +38,8 @@ export const useFileStore = create<FileState>((set, get) => ({
     set({ uploading: true, uploadProgress: 0, uploadingFileName: file.name })
 
     const formData = new FormData()
+    const filenameEncoded = btoa(unescape(encodeURIComponent(file.name)))
+    formData.append('filename', filenameEncoded)
     formData.append('file', file)
     if (expireHours) {
       formData.append('expireHours', String(expireHours))

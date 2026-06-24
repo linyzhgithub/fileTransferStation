@@ -10,14 +10,6 @@ import {
 
 const router = Router()
 
-function sanitizeFilename(filename: string): string {
-  try {
-    return decodeURIComponent(filename)
-  } catch {
-    return filename
-  }
-}
-
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -36,7 +28,15 @@ router.post('/upload', upload.single('file'), async (req: Request, res: Response
     }
 
     const expireHours = req.body.expireHours ? parseInt(req.body.expireHours) : undefined
-    const filename = sanitizeFilename(req.file.originalname)
+    
+    let filename = req.file.originalname
+    if (req.body.filename) {
+      try {
+        filename = decodeURIComponent(escape(atob(req.body.filename)))
+      } catch {
+        console.log('Could not decode base64 filename, using original')
+      }
+    }
     
     const fileItem = await saveFile(
       filename,
